@@ -3,6 +3,7 @@ Audio utility functions.
 """
 
 import io
+import typing as T
 
 import numpy as np
 import pydub
@@ -14,6 +15,9 @@ def audio_from_waveform(
 ) -> pydub.AudioSegment:
     """
     Convert a numpy array of samples of a waveform to an audio segment.
+
+    Args:
+        samples: (channels, samples) array
     """
     # Normalize volume to fit in int16
     if normalize:
@@ -66,3 +70,30 @@ def apply_filters(segment: pydub.AudioSegment, compression: bool = False) -> pyd
     )
 
     return segment
+
+
+def stitch_segments(
+    segments: T.Sequence[pydub.AudioSegment], crossfade_s: float
+) -> pydub.AudioSegment:
+    """
+    Stitch together a sequence of audio segments with a crossfade between each segment.
+    """
+    crossfade_ms = int(crossfade_s * 1000)
+    combined_segment = segments[0]
+    for segment in segments[1:]:
+        combined_segment = combined_segment.append(segment, crossfade=crossfade_ms)
+    return combined_segment
+
+
+def overlay_segments(segments: T.Sequence[pydub.AudioSegment]) -> pydub.AudioSegment:
+    """
+    Overlay a sequence of audio segments on top of each other.
+    """
+    assert len(segments) > 0
+    output: pydub.AudioSegment = None
+    for segment in segments:
+        if output is None:
+            output = segment
+        else:
+            output = output.overlay(segment)
+    return output
